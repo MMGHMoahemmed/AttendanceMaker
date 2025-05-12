@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Training Attendance Sheet Generator</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Markazi+Text:wght@400..700&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Scheherazade+New:wght@400;500;600;700&family=Tajawal:wght@200;300;400;500;700;800;900&display=swap" rel="stylesheet">
+     
+    <style>
+        /* ... (Your existing CSS styles - No changes here) ... */
+
+        /* Setup printing dimensions - A4 Landscape, Reduced Margins */
+        @page {
+            size: A4 landscape;
+            margin: 0; /* Top Right Bottom Left */
+        }
+
+        body {
+            font-family: 'Times New Roman' , serif;
+            font-family: "Markazi Text", serif;
+            background: #eee;
+            margin: 0;
+            padding: 0;
+        }
+
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px; /* Padding for screen view */
+        }
+
+        .controls { /* Keep .controls style for modal body */
+            background: #fff;
+            padding: 20px; /* Increased padding for modal */
+            margin-bottom: 10px; /* Remove margin in modal */
+            border: none; /* Remove border in modal */
+        }
+
+        .controls label {
+            margin-right: 10px;
+            display: block; /* Display labels on new lines */
+            margin-bottom: 5px;
+        }
+
+        .controls input[type="text"],
+        .controls input[type="number"],
+        .controls input[type="file"] { /* Include file input in full width style */
+            width: calc(100% - 20px); /* Full width input */
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            box-sizing: border-box; /* Include padding and border in element's total width */
+        }
+
+        .controls button {
+            margin-top: 10px;
+            padding: 8px 15px;
+        }
+
+
+        /* Attendance Page Style */
+        .attendance-page {
+            width: 100%;
+            min-height: 230mm; /* 277mm  is A4 Landscape height adjusted for margins */
+            margin: 0 auto;
+            padding: 10mm;
+            background: #fff;
+
+            position: relative;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+            page-break-after: always; /* Ensure each page starts on a new sheet when printing */
+        }
+
+        .attendance-page:last-child {
+            page-break-after: avoid; /* Avoid page break after the last page */
+        }
+
+        /* Header Style with 3 Logos and Text */
+        .header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 6mm;
+            margin-bottom: 2mm;
+        }
+
+        .header-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 2mm;
+        }
+
+        .header-logos-left {
+            text-align: left;
+        }
+
+        .header-title {
+            text-align: center;
+        }
+
+        .header-logos-right {
+            text-align: right;
+        }
+
+        .header-logos-center {
+            text-align: center;
+        }
+
+        #left_logo { /* Keep ID for initial hidden template - NOW OUTSIDE OUTPUT */
+            height: 20mm;
+            vertical-align:auto;
+            margin: 0 10px;
+        }
+
+        #right_logo { /* Keep ID for initial hidden template - NOW OUTSIDE OUTPUT */
+            height: 14mm;
+            vertical-align:auto;
+            margin: 0 10px;
+        }
+        #center_logo { /* Keep ID for initial hidden template - NOW OUTSIDE OUTPUT */
+            height: 14mm;
+            vertical-align:auto;
+            margin: 0 10px;
+        }
+
+        .page-left-logo { /* Class for logos in generated pages */
+            vertical-align:auto;
+            margin: 0 10px;
+        }
+
+        .page-right-logo { /* Class for logos in generated pages */
+            vertical-align:auto;
+            margin: 0 10px;
+        }
+        .page-center-logo { /* Class for logos in generated pages */
+            vertical-align:auto;
+            margin: 0 10px;
+        }
+
+
+        .header h2 {
+            display: inline-block;
+            margin: 0;
+            font-size: 24px;
+            font-weight: bold;
+            vertical-align: middle;
+        }
+
+        .header-bottom-row {
+            text-align: center;
+            width: 100%;
+            font-size: 11px;
+            color: #777;
+        }
+
+
+        /* Attendance Table Style (LTR) */
+        .attendance-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed; /* Fixed layout for column control */
+            direction: rtl; /* Left-to-right table */
+            border-top: none; /* NO top border for attendance table - visually connects to info table above */
+        }
+
+        .attendance-table th, .attendance-table td { /* Style for cells in attendance table ONLY */
+            border: 1px solid #020202;
+            padding: 6px 8px;
+            text-align: center;
+            font-size: 12px;
+            word-break: break-word;
+            height: 30px; /* Ensure consistent row height */
+        }
+
+        .attendance-table th {
+            background: #cbccce; /* Darker grey background for header row */
+            font-weight: bold;
+            color: #020202;
+            border: 1px solid #bbb; /* Slightly darker border for header row */
+        }
+
+
+        /* Column Width Adjustments - Apply to th in header row */
+        .attendance-table th:nth-child(1),
+        .attendance-table td:nth-child(1) {
+            width: 30px; /* No. column */
+        }
+
+        .attendance-table th:nth-child(2),
+        .attendance-table td:nth-child(2) {
+            width: 130px; /* Name column */
+            text-align: right; /* Adjust if needed for name alignment */
+        }
+
+        .attendance-table th:nth-child(3),
+        .attendance-table td:nth-child(3) {
+            width: 50px; /* ID column */
+        }
+
+        .attendance-table th:nth-child(n+4),
+        .attendance-table td:nth-child(n+4) {
+            width: 60px; /* Signature columns (flexible width) */
+        }
+
+
+        /* Footer Style */
+        .footer {
+            margin-top: 3mm;
+            padding-top: 3mm;
+            text-align: center;
+            font-size: 15px;
+            color: #0d0d0d;
+        }
+        .footer-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding-left: 15mm;
+            padding-right: 15mm;
+            margin-bottom: 2mm;
+
+        }
+
+        .footer-name-left {
+            text-align: center;
+            font-weight: bold;
+
+        }
+
+        .footer-name-right {
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            font-weight: bold;
+        }
+        .footer-name-center {
+            text-align: center;
+            font-weight: bold;
+        }
+        .footer-down-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding-left: 5mm;
+            padding-right: 5mm;
+            margin-top: 5mm;
+            padding-top: 5mm;
+
+        }
+        .footer-down-left {
+            text-align: center;
+            color: #615b5b;
+        }
+
+        .footer-down-right {
+            text-align: center;
+            color: #615b5b;
+        }
+        .footer-down-center {
+            text-align: center;
+            color: #615b5b;
+        }
+
+        p {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+
+</style>
+
+<style>
+
+    table.table-bordered{
+        border:1px solid rgb(10, 10, 10);
+
+      }
+    table.table-bordered > thead > tr > th{
+        border:1px solid rgb(0, 0, 0);
+    }
+    table.table-bordered > tbody > tr > td{
+        border:1px solid rgb(3, 3, 3);
+        font-weight:bold;
+    }
+    table{
+        margin-bottom: 0;
+    }
+</style>
+
+
+
+
+<style>
+    /* ... (Your existing CSS styles) ... */
+
+    /* --- PRINT SPECIFIC STYLES BELOW --- */
+    @media print {
+        /* Reset body styles for printing - important to remove screen styles */
+
+        body {
+
+            margin: 0;      /* Reset body margins */
+            padding: 0;     /* Reset body padding */
+            color: #000;    /* Ensure text is black for print */
+            font-family: 'Times New Roman', serif; /* Set a default print font */
+            font-family: "Markazi Text", serif;
+        }
+
+        .container {
+            padding: 0; /* Remove container padding in print */
+            max-width: none !important; /* Remove max-width restriction */
+            width: 100% !important; /* Ensure full width in print */
+            margin: 0 auto; /* Center container if needed in print (though likely not needed with full width) */
+        }
+
+        .controls {
+            display: none !important; /* Already have this, keep it to hide controls */
+        }
+
+        /* Ensure attendance-page takes full A4 Landscape width */
+        .attendance-page {
+            width: 297mm; /* Exact A4 Landscape width */
+            min-height: 210mm; /* Exact A4 Landscape height */
+            max-width: 297mm; /* Prevent exceeding A4 Landscape width */
+            max-height: 210mm; /* Prevent exceeding A4 Landscape height */
+            margin: 0; /* Remove any margins on attendance-page itself */
+            padding: 10mm; /* Keep padding for content spacing inside the page */
+            box-shadow: none; /* Remove box-shadow for cleaner print */
+            border: none;      /* Remove border for cleaner print */
+            page-break-after: always;
+            box-sizing: border-box; /* Very important for accurate width/height calculation with padding */
+        }
+
+        .attendance-page:last-child {
+            page-break-after: avoid;
+        }
+
+        /* Adjust header and footer margins if necessary - keep them within page */
+        .header {
+            margin-bottom: 2mm; /* Reduce header margin if overflowing */
+            padding-top: 2mm;   /* Reduce header padding if overflowing */
+        }
+
+        .footer {
+            margin-top: 2mm;    /* Reduce footer margin if overflowing */
+            padding-top: 2mm;    /* Reduce footer padding if overflowing */
+            margin-bottom: 0; /* Ensure footer doesn't push beyond bottom page */
+        }
+
+        /* --- Optional adjustments for tables if still overflowing --- */
+        .attendance-table th, .attendance-table td {
+            padding: 4px 6px; /* Slightly reduce cell padding in tables */
+            font-size: 11px; /* Slightly reduce font size in tables */
+            height: auto;     /* Let row height adjust based on content */
+        }
+
+        .header h2 {
+            font-size: 22px;  /* Slightly reduce header title size if needed */
+        }
+        .footer {
+            font-size: 12px;  /* Slightly reduce footer font size if needed */
+        }
+
+        /* Remove extra spacing around tables if any */
+        table {
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
+            padding: 0 !important;
+            width: 100%;
+            border-collapse: collapse;
+            direction: rtl; /* Left-to-right table */
+            border-top: none;
+        }
+
+
+        /* Ensure images scale down if they are causing overflow */
+        #left_logo { /* Keep ID for initial hidden template - NOW OUTSIDE OUTPUT */
+            height: 20mm;
+            vertical-align:auto;
+            margin: 0 10px;
+        }
+
+        #right_logo { /* Keep ID for initial hidden template - NOW OUTSIDE OUTPUT */
+            height: 14mm;
+            vertical-align:auto;
+            margin: 0 10px;
+        }
+        #center_logo { /* Keep ID for initial hidden template - NOW OUTSIDE OUTPUT */
+            height: 14mm;
+            vertical-align:auto;
+            margin: 0 10px;
+        }
+
+        .page-left-logo { /* Class for logos in generated pages */
+            vertical-align:auto;
+            margin: 0 10px;
+        }
+
+        .page-right-logo { /* Class for logos in generated pages */
+            vertical-align:auto;
+            margin: 0 10px;
+        }
+        .page-center-logo { /* Class for logos in generated pages */
+            vertical-align:auto;
+            margin: 0 10px;
+        }
+        .table-secondary {
+            background-color: #d0cece !important; /* Bootstrap secondary color */
+            -webkit-print-color-adjust: exact; /* For webkit browsers */
+            print-color-adjust: exact;         /* Standard property */
+            direction: ltr;
+        }
+
+        .table-primary {
+            background-color: #9bc2e6 !important; /* Bootstrap primary color */
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            direction: ltr;
+        }
+
+        .table-info {
+            background-color: #ddebf7 !important;  /* Bootstrap info color */
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .hedro {
+            background-color: #adaaaa !important; /* Bootstrap primary color */
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* If you are using other Bootstrap table color classes (like .table-success, .table-danger etc.),
+           add similar rules for them here, using their respective Bootstrap background color values. */
+
+        /* Ensure table borders are also printed if needed */
+        table.table-bordered,
+        table.table-bordered th,
+        table.table-bordered td {
+            border: 1px solid rgb(3, 3, 3) !important; /* Ensure borders are visible in print */
+            border-collapse: collapse !important; /* Ensure borders collapse properly */
+        }
+        #headertable{
+            direction: ltr;
+        }
+
+
+    }
+</style>
+
+
+
+
+
+
+
+
+
+</head>
+
+<body>
+
+    
+    <div class="container">
+
+        <!-- Hidden initial logos - MOVED OUTSIDE #output -->
+        <div class="header" style="display:none;">
+            <div class="header-top-row">
+                <div class="header-logos-left">
+                    <img id="left_logo" src="" alt="Left Logo" class="left_logo">
+                </div>
+                <div class="header-logos-center">
+                    <img id="center_logo" src="" alt="Center Logo" class="center_logo">
+                </div>
+                <div class="header-logos-right">
+                    <img  id="right_logo" src="" alt="Right Logo" class="right_logo">
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Button to trigger modal and other control buttons -->
+        <div class="controls">
+            <label for="excel-file">حدد ملف إكسل:</label> <!-- Translated label -->
+            <input type="file" id="excel-file" accept=".xlsx, .xls"><br>
+
+        <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#controlsModal">
+            فتح الإعدادات <!-- Translated button text -->
+        </button>
+
+        <!-- Translated button texts -->
+        <button type="button" id="generate" class="btn btn-primary">إنشاء الصفوف المفلترة</button>
+        <button type="button" id="generatewhole" class="btn btn-primary">إنشاء الكشف الكامل</button>
+
+        <button type="button" id="export" class="btn btn-success">تصدير إلى PDF</button>
+        <!-- ADD PRINT BUTTON HERE -->
+        <button type="button" id="printButton" class="btn btn-info">طباعة كشوف الحضور</button> <!-- Translated button text -->
+    </div>
+
+        <div id="output">
+            <!-- Attendance pages will be generated here -->
+        </div>
+    </div>
+
+    <!-- Controls Modal -->
+    <div class="modal fade" id="controlsModal" tabindex="-1" aria-labelledby="controlsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="controlsModalLabel">إعدادات مولد كشف الحضور</h5> <!-- Translated modal title -->
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="controls">  <!-- Keep .controls class for styling -->
+                        <h4>إعدادات الشعارات</h4> <!-- Translated heading -->
+
+                        <div class="logo-settings-group">
+                            <h5>الشعار الأيسر </h5> <!-- Translated heading -->
+                            <label for="left-logo">صورة الشعار الأيسر:</label> <!-- Translated label -->
+                            <input type="file" id="left-logo" accept="image/*">
+                            <button type="button" class="btn btn-sm btn-outline-secondary clear-logo-btn" data-logo-id="left">مسح الشعار</button><br> <!-- Translated button text -->
+                            <label for="left-logo-height">الارتفاع (مم):</label> <!-- Translated label -->
+                            <input type="number" id="left-logo-height" class="logo-height-input" data-logo-id="left" value="23">
+                            <label for="left-logo-width">العرض (مم):</label> <!-- Translated label -->
+                            <input type="number" id="left-logo-width" class="logo-width-input" data-logo-id="left" value="31">
+                            <label for="left-logo-alignment">المحاذاة العمودية:</label> <!-- Translated label -->
+                            <select id="left-logo-alignment" class="logo-alignment-input" data-logo-id="left">
+                                <option value="auto">تلقائي</option> <!-- Translated option -->
+                                <option value="top">أعلى</option> <!-- Translated option -->
+                                <option value="middle">وسط</option> <!-- Translated option -->
+                                <option value="bottom">أسفل</option> <!-- Translated option -->
+                            </select>
+                        </div>
+
+                        <div class="logo-settings-group">
+                            <h5>الشعار الأوسط </h5> <!-- Translated heading -->
+                            <label for="center-logo">صورة الشعار الأوسط:</label> <!-- Translated label -->
+                            <input type="file" id="center-logo" accept="image/*">
+                             <button type="button" class="btn btn-sm btn-outline-secondary clear-logo-btn" data-logo-id="center">مسح الشعار</button><br> <!-- Translated button text -->
+                            <label for="center-logo-height">الارتفاع (مم):</label> <!-- Translated label -->
+                            <input type="number" id="center-logo-height" class="logo-height-input" data-logo-id="center" value="14">
+                            <label for="center-logo-width">العرض (مم):</label> <!-- Translated label -->
+                            <input type="number" id="center-logo-width" class="logo-width-input" data-logo-id="center" value="50">
+                            <label for="center-logo-alignment">المحاذاة العمودية:</label> <!-- Translated label -->
+                            <select id="center-logo-alignment" class="logo-alignment-input" data-logo-id="center">
+                                <option value="auto">تلقائي</option> <!-- Translated option -->
+                                <option value="top">أعلى</option> <!-- Translated option -->
+                                <option value="middle">وسط</option> <!-- Translated option -->
+                                <option value="bottom">أسفل</option> <!-- Translated option -->
+                            </select>
+                        </div>
+
+                        <div class="logo-settings-group">
+                            <h5>الشعار الأيمن</h5> <!-- Translated heading -->
+                            <label for="right-logo">صورة الشعار الأيمن:</label> <!-- Translated label -->
+                            <input type="file" id="right-logo" accept="image/*">
+                             <button type="button" class="btn btn-sm btn-outline-secondary clear-logo-btn" data-logo-id="right">مسح الشعار</button><br> <!-- Translated button text -->
+                            <label for="right-logo-height">الارتفاع (مم):</label> <!-- Translated label -->
+                            <input type="number" id="right-logo-height" class="logo-height-input" data-logo-id="right" value="14">
+                            <label for="right-logo-width">العرض (مم):</label> <!-- Translated label -->
+                            <input type="number" id="right-logo-width" class="logo-width-input" data-logo-id="right">
+                            <label for="right-logo-alignment">المحاذاة العمودية:</label> <!-- Translated label -->
+                            <select id="right-logo-alignment" class="logo-alignment-input" data-logo-id="right">
+                                <option value="auto">تلقائي</option> <!-- Translated option -->
+                                <option value="top">أعلى</option> <!-- Translated option -->
+                                <option value="middle">وسط</option> <!-- Translated option -->
+                                <option value="bottom">أسفل</option> <!-- Translated option -->
+                            </select>
+                        </div>
+
+                        <hr>  <!-- Separator line -->
+
+                        <label for="arabic-title">العنوان باللغة العربية:</label> <!-- Translated label -->
+                        <input type="text" id="arabic-title" placeholder="كشف تحضير التدريب ..." value="" ><br> <!-- Placeholder is already Arabic -->
+
+                        <label for="english-title">العنوان باللغة الإنجليزية:</label> <!-- Translated label -->
+                        <input type="text" id="english-title" placeholder="Training Attendance Sheet ..." value=""><br> <!-- Placeholder is already English -->
+
+                        <label for="arabic-project-name">اسم المشروع باللغة العربية:</label> <!-- Translated label -->
+                        <input type="text" id="arabic-project-name" placeholder="اسم المشروع بالعربية" value=""><br> <!-- Placeholder is already Arabic -->
+
+                        <label for="english-project-name">اسم المشروع باللغة الإنجليزية:</label> <!-- Translated label -->
+                        <input type="text" id="english-project-name" placeholder="Project Name in English" value=""><br> <!-- Placeholder is already English -->
+
+                        <label for="donor-name">اسم الجهة المانحة:</label> <!-- Translated label -->
+                        <input type="text" id="donor-name" placeholder="Donor Name" value=""><br> <!-- Placeholder is already English -->
+
+                        <label for="training-duration">مدة التدريب:</label> <!-- Translated label -->
+                        <input type="text" id="training-duration" placeholder="e.g., 12-18 February 2025"><br> <!-- Placeholder is example date, keep English -->
+
+                        <label for="hall-details">تفاصيل القاعة والتدريب:</label> <!-- Translated label -->
+                        <input type="text" id="hall-details" placeholder="e.g., Alkwait Center - Hall 1 Solar System"><br> <!-- Placeholder is example, keep English -->
+
+                        <label for="training-days">عدد أيام التدريب:</label> <!-- Translated label -->
+                        <input type="number" id="training-days" value="5" min="1" max="10"><br>
+
+                        <hr>  <!-- Separator line -->
+
+                        <label for="left-footer-position-arabic">التذييل الأيسر - المنصب (عربي):</label> <!-- Translated label -->
+                        <input type="text" id="left-footer-position-arabic" placeholder="منسق المشروع" value="منسق المشروع"><br> <!-- Placeholder is already Arabic -->
+                        <label for="left-footer-position-english">التذييل الأيسر - المنصب (إنجليزي):</label> <!-- Translated label -->
+                        <input type="text" id="left-footer-position-english" placeholder="Project Coordinator" value="Project Coordinator"><br> <!-- Placeholder is already English -->
+                        <label for="left-footer-name-arabic">التذييل الأيسر - الاسم (عربي):</label> <!-- Translated label -->
+                        <input type="text" id="left-footer-name-arabic" placeholder="" value="علي محمد العقيلي"><br> <!-- Placeholder is already Arabic -->
+                        <label for="left-footer-name-english">التذييل الأيسر - الاسم (إنجليزي):</label> <!-- Translated label -->
+                        <input type="text" id="left-footer-name-english" placeholder="" value="Ali Mohammed Alaqili"><br> <!-- Placeholder is already English -->
+
+
+                        <label for="center-footer-position-arabic">التذييل الأوسط - المنصب (عربي):</label> <!-- Translated label -->
+                        <input type="text" id="center-footer-position-arabic" placeholder=""><br>
+                        <label for="center-footer-position-english">التذييل الأوسط - المنصب (إنجليزي):</label> <!-- Translated label -->
+                        <input type="text" id="center-footer-position-english" placeholder=""><br>
+                        <label for="center-footer-name-arabic">التذييل الأوسط - الاسم (عربي):</label> <!-- Translated label -->
+                        <input type="text" id="center-footer-name-arabic" placeholder=""><br>
+                        <label for="center-footer-name-english">التذييل الأوسط - الاسم (إنجليزي):</label> <!-- Translated label -->
+                        <input type="text" id="center-footer-name-english" placeholder=""><br>
+
+
+
+                        <label for="right-footer-position-arabic">التذييل الأيمن - المنصب (عربي):</label> <!-- Translated label -->
+                        <input type="text" id="right-footer-position-arabic" placeholder="ضابط المشروع" value="ضابط المشروع"><br> <!-- Placeholder is already Arabic -->
+                        <label for="right-footer-position-english">التذييل الأيمن - المنصب (إنجليزي):</label> <!-- Translated label -->
+                        <input type="text" id="right-footer-position-english" placeholder="Project Officer" value="Project Officer"><br> <!-- Placeholder is already English -->
+                        <label for="right-footer-name-arabic">التذييل الأيمن - الاسم (عربي):</label> <!-- Translated label -->
+                        <input type="text" id="right-footer-name-arabic" placeholder="  "  value="المقداد هاشم عبدالله"><br> <!-- Placeholder is already Arabic -->
+                        <label for="right-footer-name-english">التذييل الأيمن - الاسم (إنجليزي):</label> <!-- Translated label -->
+                        <input type="text" id="right-footer-name-english" placeholder="  " value="Almeqdad Hashem Abdullah"><br> <!-- Placeholder is already English -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button> <!-- Translated button text -->
+                 <!--  Buttons moved outside the modal footer as per original HTML -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    <!-- JavaScript Libraries (xlsx, html2canvas, jsPDF) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+
+
+    <script>
+        const arabicTitleInput = document.getElementById('arabic-title');
+        const englishTitleInput = document.getElementById('english-title');
+        const arabicProjectNameInput = document.getElementById('arabic-project-name');
+        const englishProjectNameInput = document.getElementById('english-project-name');
+        const donorNameInput = document.getElementById('donor-name');
+        const trainingDurationInput = document.getElementById('training-duration');
+        const hallDetailsInput = document.getElementById('hall-details');
+        const trainingDaysInput = document.getElementById('training-days');
+
+        const leftLogoInputFile = document.getElementById('left-logo');
+        const centerLogoInputFile = document.getElementById('center-logo');
+        const rightLogoInputFile = document.getElementById('right-logo');
+
+        const leftLogoImg = document.getElementById('left_logo'); // Keep ID for template - NOW OUTSIDE OUTPUT
+        const centerLogoImg = document.getElementById('center_logo'); // Keep ID for template - NOW OUTSIDE OUTPUT
+        const rightLogoImg = document.getElementById('right_logo'); // Keep ID for template - NOW OUTSIDE OUTPUT
+
+        // Logo Style Inputs
+        const leftLogoHeightInput = document.getElementById('left-logo-height');
+        const leftLogoWidthInput = document.getElementById('left-logo-width');
+        const leftLogoAlignmentInput = document.getElementById('left-logo-alignment');
+
+        const centerLogoHeightInput = document.getElementById('center-logo-height');
+        const centerLogoWidthInput = document.getElementById('center-logo-width');
+        const centerLogoAlignmentInput = document.getElementById('center-logo-alignment');
+
+        const rightLogoHeightInput = document.getElementById('right-logo-height');
+        const rightLogoWidthInput = document.getElementById('right-logo-width');
+        const rightLogoAlignmentInput = document.getElementById('right-logo-alignment');
+
+
+        // Clear Logo Buttons
+        const clearLogoButtons = document.querySelectorAll('.clear-logo-btn');
+
+        // Footer Input Fields
+        const leftFooterPositionArabicInput = document.getElementById('left-footer-position-arabic');
+        const leftFooterPositionEnglishInput = document.getElementById('left-footer-position-english');
+        const leftFooterNameArabicInput = document.getElementById('left-footer-name-arabic');
+        const leftFooterNameEnglishInput = document.getElementById('left-footer-name-english');
+
+        const centerFooterPositionArabicInput = document.getElementById('center-footer-position-arabic');
+        const centerFooterPositionEnglishInput = document.getElementById('center-footer-position-english');
+        const centerFooterNameArabicInput = document.getElementById('center-footer-name-arabic');
+        const centerFooterNameEnglishInput = document.getElementById('center-footer-name-english');
+
+        const rightFooterPositionArabicInput = document.getElementById('right-footer-position-arabic');
+        const rightFooterPositionEnglishInput = document.getElementById('right-footer-position-english');
+        const rightFooterNameArabicInput = document.getElementById('right-footer-name-arabic');
+        const rightFooterNameEnglishInput = document.getElementById('right-footer-name-english');
+
+        // Get modal instance ONCE, outside event listeners
+        const controlsModalInstance = bootstrap.Modal.getOrCreateInstance(document.getElementById('controlsModal'));
+
+
+
+
+
+
+
+        function generateAttendancePages(data, trainingDays, arabicTitle, englishTitle, arabicProjectName, englishProjectName, donorName, trainingDuration, hallDetailsInputVal, leftLogoSrc, centerLogoSrc, rightLogoSrc,
+                                        leftFooterPositionArabic, leftFooterPositionEnglish, leftFooterNameArabic, leftFooterNameEnglish,
+                                        centerFooterPositionArabic, centerFooterPositionEnglish, centerFooterNameArabic, centerFooterNameEnglish,
+                                        rightFooterPositionArabic, rightFooterPositionEnglish, rightFooterNameArabic, rightFooterNameEnglish) {
+    let outputHtml = '';
+    let participantNumber = 1; // Initialize participant number counter
+
+    // Group data by "اسم القاعة"
+    const hallGroups = {};
+    data.forEach(participant => {
+        const hallName = participant["اسم القاعة"] || hallDetailsInputVal; // Use hall name from Excel or fallback to input
+        if (!hallGroups[hallName]) {
+            hallGroups[hallName] = [];
+        }
+        hallGroups[hallName].push(participant);
+    });
+
+    // Iterate through hall groups
+    for (const hallName in hallGroups) {
+        if (hallGroups.hasOwnProperty(hallName)) {
+            const participantsInHall = hallGroups[hallName];
+            const rowsPerPage = 10;
+            const totalPages = Math.ceil(participantsInHall.length / rowsPerPage) || 1;
+            const hallDetails = hallName; // Hall details for the current group
+
+            for (let page = 0; page < totalPages; page++) {
+                const startIndex = page * rowsPerPage;
+                const pageData = participantsInHall.slice(startIndex, startIndex + rowsPerPage);
+
+                outputHtml += '<div class="attendance-page">';
+
+                // Header with 3 Logos and Text - HTML Structure
+                outputHtml += `
+                    <div class="header">
+                        <div class="header-top-row">
+
+                            <div class="header-logos-left">
+                                <img class="page-left-logo" src="${leftLogoSrc}" alt="Left Logo" >
+                            </div>
+
+                              <div class="header-logos-center">
+                            <img class="page-center-logo" src="${centerLogoSrc}" alt="Center Logo" >
+                        </div>
+
+                        <div class="header-logos-right">
+                            <img  class="page-right-logo" src="${rightLogoSrc}" alt="Right Logo" >
+                        </div>
+                    </div>
+
+                </div>
+                `;
+
+                // Information Table - SEPARATE TABLE ABOVE ATTENDANCE TABLE
+                outputHtml += `
+        <table id="headertable" class="table table-sm table-bordered" style="margin-bottom: 0;">
+            <tbody>
+              <tr>
+                <td id="Title_Arabic" colspan="6" class="table-secondary text-center" style="background-color:#d0cece" >${arabicTitle}</td>
+              </tr>
+              <tr>
+                <td id="Title_English" colspan="6" class="table-secondary text-center" style="background-color:#d0cece">${englishTitle}</td>
+              </tr>
+              <tr>
+                <td rowspan="2" class="table-primary text-center" style="background-color:#9bc2e6">Project</td>
+                <td id="Title_Arabic_Name" colspan="5" class="table-info text-center" style="background-color:#ddebf7">${arabicProjectName}</td>
+              </tr>
+              <tr>
+                <td id="Title_English_Name" colspan="5"class="table-info text-center" style="background-color:#ddebf7">${englishProjectName}</td>
+              </tr>
+              <tr>
+                <td class="table-primary text-center" style="background-color:#9bc2e6">Donor</td>
+                <td id="Donor_Name" class="table-info text-center" style="background-color:#ddebf7">${donorName}</td>
+                <td class="table-primary text-center" style="background-color:#9bc2e6">Training Date</td>
+                <td id="Training_Period" class="table-info text-center" style="background-color:#ddebf7; direction:ltr;">${trainingDuration}</td>
+                <td class="table-primary text-center" style="background-color:#9bc2e6">Place/Room</td>
+                <td id="Hall_Training_Details" class="table-info text-center" style="background-color:#ddebf7">${hallDetails}</td>
+              </tr>
+            </tbody>
+          </table>
+                `;
+
+                // Attendance Table - HTML Structure
+                outputHtml += `
+                    <table class="attendance-table table table-sm table-bordered">
+                        <thead>
+                        <tr>
+                            <th class="hedro text-center" style="background-color:#adaaaa"><p>الرقم</p> <p>No.</p></th>
+                            <th class="hedro text-center" style="background-color:#adaaaa"> <p>الإسم</p> <p>Name</p> </th>
+                            <th class="hedro text-center" style="background-color:#adaaaa"> <p>المديرية</p> <p>District</p> </th>
+                           
+                            <th class="hedro text-center" style="background-color:#adaaaa"> <p>رقم الهوية</p > <p>ID Number</p> </th>
+                            <th class="hedro text-center" style="background-color:#adaaaa"> <p>نوع الهوية</p> <p>ID Type</p> </th>
+                            <th class="hedro text-center" style="background-color:#adaaaa"> <p>رقم الهاتف</p> <p>Phone No</p> </th>
+                            ${Array(trainingDays).fill('<th class="hedro text-center" style="background-color:#adaaaa"> <p>التوقيع</p> <p>Signture</p></th>').join('')}
+                            <th class="hedro text-center" style="background-color:#adaaaa"> <p>ملاحظات</p> <p>Notes</p> </th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        `;
+                        for (let rowIndex = 0; rowIndex < rowsPerPage; rowIndex++) { // Loop up to rowsPerPage
+                            const participantIndex = startIndex + rowIndex;
+                            const participant = pageData[rowIndex];
+
+                            if(participant){ // Check if participant exists (to avoid errors for empty slots on last page)
+                                outputHtml += `
+                            <tr>
+                                <td class="table-info text-center" style="background-color:#d9e1f2">${participantNumber++}</td>
+                                <td class="text-center">${participant ? (participant["اسم المشارك"] || '') : ''}</td>
+                                <td class="text-center">${participant ? (participant["المديرية"] || '') : ''}</td>
+                              
+                                <td class="text-center">${participant ? (participant["رقم الهوية"] || '') : ''}</td>
+                                <td class="text-center">${participant ? (participant["نوع الهوية"] || '') : ''}</td>
+                                <td class="text-center">${participant ? (participant["رقم التلفون"] || '') : ''}</td>
+                                ${Array(trainingDays).fill('<td></td>').join('')}
+                                <td class="text-center" style="font-size:8px;">${participant ? (participant["ملاحظات"] || '') : ''}</td>
+                            </tr>
+                            `;
+                            }
+
+                        }
+                        outputHtml += `
+                        </tbody>
+                    </table>
+                `;
+
+                // Footer - HTML Structure
+                outputHtml += `
+
+                                    <div class="footer">
+                        <div class="footer-top-row">
+                            <div class="footer-name-left">
+                               <p id="left_title_position_Arabic"> ${leftFooterPositionArabic} </p>
+                               <p id="left_title_position_English"> ${leftFooterPositionEnglish} </p>
+                               <p id="left_title_name_Arabic"> ${leftFooterNameArabic} </p>
+                               <p id="left_title_name_English"> ${leftFooterNameEnglish} </p>
+                            </div>
+
+                            <div class="footer-name-center">
+                               <p id="center_title_position_Arabic">${centerFooterPositionArabic}</p>
+                               <p id="center_title_position_English">${centerFooterPositionEnglish}</p>
+                               <p id="center_title_name_Arabic">${centerFooterNameArabic}</p>
+                               <p id="center_title_name_English">${centerFooterNameEnglish}</p>
+                            </div>
+
+                            <div class="footer-name-right">
+                              <p id="center_title_position_Arabic"> ${rightFooterPositionArabic} </p>
+                               <p id="center_title_position_English"> ${rightFooterPositionEnglish} </p>
+                               <p id="right_title_name_Arabic" > ${rightFooterNameArabic} </p>
+                               <p id="right_title_name_English"> ${rightFooterNameEnglish}</p>
+                            </div>
+
+                        </div>
+
+
+                        
+
+                    </div>
+
+
+                `;
+
+                outputHtml += '</div>'; // End of attendance-page
+            }
+            participantNumber = 1;
+             //participantNumber = startIndex + rowsPerPage; // Update participant number for the next hall group to continue numbering
+        }
+    }
+
+
+    return outputHtml;
+}
+
+
+
+
+function saveSettings() {
+            localStorage.setItem('arabicTitle', arabicTitleInput.value);
+            localStorage.setItem('englishTitle', englishTitleInput.value);
+            localStorage.setItem('arabicProjectName', arabicProjectNameInput.value);
+            localStorage.setItem('englishProjectName', englishProjectNameInput.value);
+            localStorage.setItem('donorName', donorNameInput.value);
+            localStorage.setItem('trainingDuration', trainingDurationInput.value);
+            localStorage.setItem('hallDetails', hallDetailsInput.value);
+            localStorage.setItem('trainingDays', trainingDaysInput.value);
+            console.log('saveSettings called'); // ADDED LOGGING
+
+            // Save Logo Settings
+            saveLogoSettings('left');
+            saveLogoSettings('center');
+            saveLogoSettings('right');
+
+
+            // Save Footer Settings
+            localStorage.setItem('leftFooterPositionArabic', leftFooterPositionArabicInput.value);
+            localStorage.setItem('leftFooterPositionEnglish', leftFooterPositionEnglishInput.value);
+            localStorage.setItem('leftFooterNameArabic', leftFooterNameArabicInput.value);
+            localStorage.setItem('leftFooterNameEnglish', leftFooterNameEnglishInput.value);
+
+            localStorage.setItem('centerFooterPositionArabic', centerFooterPositionArabicInput.value);
+            localStorage.setItem('centerFooterPositionEnglish', centerFooterPositionEnglishInput.value);
+            localStorage.setItem('centerFooterNameArabic', centerFooterNameArabicInput.value);
+            localStorage.setItem('centerFooterNameEnglish', centerFooterNameEnglishInput.value);
+
+            localStorage.setItem('rightFooterPositionArabic', rightFooterPositionArabicInput.value);
+            localStorage.setItem('rightFooterPositionEnglish', rightFooterPositionEnglishInput.value);
+            localStorage.setItem('rightFooterNameArabic', rightFooterNameArabicInput.value);
+            localStorage.setItem('rightFooterNameEnglish', rightFooterNameEnglishInput.value);
+        }
+
+        function saveLogoSettings(logoId) {
+            const logoImg = document.getElementById(`${logoId}_logo`);
+            const heightInput = document.getElementById(`${logoId}-logo-height`);
+            const widthInput = document.getElementById(`${logoId}-logo-width`);
+            const alignmentInput = document.getElementById(`${logoId}-logo-alignment`);
+
+            if (!logoImg) { // Defensive null check
+                console.error(`Logo element with ID ${logoId}_logo not found!`);
+                return; // Exit if logo element is not found
+            }
+
+
+            if (logoImg.src) {
+                localStorage.setItem(`${logoId}LogoFile`, logoImg.src);
+            } else {
+                localStorage.removeItem(`${logoId}LogoFile`);
+            }
+            localStorage.setItem(`${logoId}LogoHeight`, heightInput.value);
+            localStorage.setItem(`${logoId}LogoWidth`, widthInput.value);
+            localStorage.setItem(`${logoId}LogoAlignment`, alignmentInput.value);
+            console.log(`saveLogoSettings for ${logoId} called`); // ADDED LOGGING
+        }
+
+
+        function loadSettings() {
+            arabicTitleInput.value = localStorage.getItem('arabicTitle') || '';
+            englishTitleInput.value = localStorage.getItem('englishTitle') || '';
+            arabicProjectNameInput.value = localStorage.getItem('arabicProjectName') || '';
+            englishProjectNameInput.value = localStorage.getItem('englishProjectName') || '';
+            donorNameInput.value = localStorage.getItem('donorName') || '';
+            trainingDurationInput.value = localStorage.getItem('trainingDuration') || '';
+            hallDetailsInput.value = localStorage.getItem('hallDetails') || '';
+            trainingDaysInput.value = localStorage.getItem('trainingDays') || '5';
+
+
+            // Load Logo Settings
+            loadLogoSettings('left');
+            loadLogoSettings('center');
+            loadLogoSettings('right');
+
+
+            // Load Footer Settings
+            leftFooterPositionArabicInput.value = localStorage.getItem('leftFooterPositionArabic') || '';
+            leftFooterPositionEnglishInput.value = localStorage.getItem('leftFooterPositionEnglish') || '';
+            leftFooterNameArabicInput.value = localStorage.getItem('leftFooterNameArabic') || '';
+            leftFooterNameEnglishInput.value = localStorage.getItem('leftFooterNameEnglish') || '';
+
+            centerFooterPositionArabicInput.value = localStorage.getItem('centerFooterPositionArabic') || '';
+            centerFooterPositionEnglishInput.value = localStorage.getItem('centerFooterPositionEnglish') || '';
+            centerFooterNameArabicInput.value = localStorage.getItem('centerFooterNameArabic') || '';
+            centerFooterNameEnglishInput.value = localStorage.getItem('centerFooterNameEnglish') || '';
+
+            rightFooterPositionArabicInput.value = localStorage.getItem('rightFooterPositionArabic') || '';
+            rightFooterPositionEnglishInput.value = localStorage.getItem('rightFooterPositionEnglish') || '';
+            rightFooterNameArabicInput.value = localStorage.getItem('rightFooterNameArabic') || '';
+            rightFooterNameEnglishInput.value = localStorage.getItem('rightFooterNameEnglish') || '';
+        }
+
+        function loadLogoSettings(logoId) {
+            const logoImg = document.getElementById(`${logoId}_logo`);
+            const heightInput = document.getElementById(`${logoId}-logo-height`);
+            const widthInput = document.getElementById(`${logoId}-logo-width`);
+            const alignmentInput = document.getElementById(`${logoId}-logo-alignment`);
+
+            logoImg.src = localStorage.getItem(`${logoId}LogoFile`) || '';
+            const storedHeight = localStorage.getItem(`${logoId}LogoHeight`);
+            const storedWidth = localStorage.getItem(`${logoId}LogoWidth`);
+            const storedAlignment = localStorage.getItem(`${logoId}LogoAlignment`);
+
+            heightInput.value = storedHeight || (logoId === 'left' ? '20' : '14'); // Default height if not in storage
+            widthInput.value = storedWidth || '';
+            alignmentInput.value = storedAlignment || 'auto';
+
+            applyLogoStyle(logoId); // Apply loaded styles immediately
+        }
+
+
+        function updateLogos(logoInputFile, logoImg, logoId) {
+            const file = logoInputFile.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onloadend = function() {
+                    logoImg.src = reader.result;
+                    saveLogoSettings(logoId);
+                    saveSettings();
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function clearLogo(logoImg, logoId) {
+            logoImg.src = '';
+            localStorage.removeItem(`${logoId}LogoFile`);
+            saveLogoSettings(logoId);
+            saveSettings();
+        }
+
+        function printAttendanceSheets() {
+            const controlsDiv = document.querySelector('.controls');
+
+            if (!controlsDiv) {
+                console.error("Controls div not found!");
+                return;
+            }
+
+            const originalControlsDisplay = controlsDiv.style.display;
+            controlsDiv.style.display = 'none'; // Hide the controls
+
+            window.print();
+
+            setTimeout(() => {
+                controlsDiv.style.display = originalControlsDisplay; // Restore controls visibility
+            }, 100);
+        }
+
+        function applyLogoStyle(logoId) {
+            const logoHeight = document.getElementById(`${logoId}-logo-height`).value;
+            const logoWidth = document.getElementById(`${logoId}-logo-width`).value;
+            const logoAlignment = document.getElementById(`${logoId}-logo-alignment`).value;
+            const logoElements = document.querySelectorAll(`.attendance-page .page-${logoId}-logo`); // Target within each page
+
+            logoElements.forEach(logoImg => { // Loop through all found elements
+                logoImg.style.height = logoHeight ? `${logoHeight}mm` : '';
+                logoImg.style.width = logoWidth ? `${logoWidth}mm` : '';
+                logoImg.style.verticalAlign = logoAlignment;
+            });
+        }
+
+
+        // Load settings on page load
+        loadSettings();
+
+        // Save settings on general input changes (including new footer inputs)
+        arabicTitleInput.addEventListener('change', saveSettings);
+        englishTitleInput.addEventListener('change', saveSettings);
+        arabicProjectNameInput.addEventListener('change', saveSettings);
+        englishProjectNameInput.addEventListener('change', saveSettings);
+        donorNameInput.addEventListener('change', saveSettings);
+        trainingDurationInput.addEventListener('change', saveSettings);
+        hallDetailsInput.addEventListener('change', saveSettings);
+        trainingDaysInput.addEventListener('change', saveSettings);
+
+        leftFooterPositionArabicInput.addEventListener('change', saveSettings);
+        leftFooterPositionEnglishInput.addEventListener('change', saveSettings);
+        leftFooterNameArabicInput.addEventListener('change', saveSettings);
+        leftFooterNameEnglishInput.addEventListener('change', saveSettings);
+        centerFooterPositionArabicInput.addEventListener('change', saveSettings);
+        centerFooterPositionEnglishInput.addEventListener('change', saveSettings);
+        centerFooterNameArabicInput.addEventListener('change', saveSettings);
+        centerFooterNameEnglishInput.addEventListener('change', saveSettings);
+        rightFooterPositionArabicInput.addEventListener('change', saveSettings);
+        rightFooterPositionEnglishInput.addEventListener('change', saveSettings);
+        rightFooterNameArabicInput.addEventListener('change', saveSettings);
+        rightFooterNameEnglishInput.addEventListener('change', saveSettings);
+
+
+        leftLogoInputFile.addEventListener('change', function() {
+            updateLogos(leftLogoInputFile, leftLogoImg, 'left');
+        });
+        centerLogoInputFile.addEventListener('change',  function() {
+            updateLogos(centerLogoInputFile, centerLogoImg, 'center');
+        });
+        rightLogoInputFile.addEventListener('change',  function() {
+            updateLogos(rightLogoInputFile, rightLogoImg, 'right');
+        });
+
+        // Event listeners for Clear Logo Buttons
+        clearLogoButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const logoId = this.dataset.logoId;
+                clearLogo(document.getElementById(`${logoId}_logo`), logoId);
+            });
+        });
+
+        // Event listeners for Logo Style inputs to apply styles in real-time and save
+        ['left', 'center', 'right'].forEach(logoId => {
+            document.getElementById(`${logoId}-logo-height`).addEventListener('change', function() {
+                console.log(`${logoId}-logo-height change event`); // ADDED LOGGING
+                applyLogoStyle(logoId);
+                saveLogoSettings(logoId);
+                saveSettings();
+            });
+            document.getElementById(`${logoId}-logo-width`).addEventListener('change', function() {
+                console.log(`${logoId}-logo-width change event`); // ADDED LOGGING
+                applyLogoStyle(logoId);
+                saveLogoSettings(logoId);
+                saveSettings();
+            });
+            document.getElementById(`${logoId}-logo-alignment`).addEventListener('change', function() {
+                console.log(`${logoId}-logo-alignment change event`); // ADDED LOGGING
+                applyLogoStyle(logoId);
+                saveLogoSettings(logoId);
+                saveSettings();
+            });
+        });
+
+
+        // Event Listener for "Generate Attendance Sheets" Button (now in modal footer)
+        document.getElementById('generate').addEventListener('click', function () {
+            saveSettings(); // Ensure all settings are saved before generate
+            const fileInput = document.getElementById('excel-file');
+            const trainingDays = parseInt(trainingDaysInput.value, 10);
+            const arabicTitle = arabicTitleInput.value;
+            const englishTitle = englishTitleInput.value;
+            const arabicProjectName = arabicProjectNameInput.value;
+            const englishProjectName = englishProjectNameInput.value;
+            const donorName = donorNameInput.value;
+            const trainingDuration = trainingDurationInput.value;
+            const hallDetails = hallDetailsInput.value;
+            const leftLogoSrc = leftLogoImg.src;
+            const centerLogoSrc = centerLogoImg.src;
+            const rightLogoSrc =  rightLogoImg.src;
+
+            // Get Footer Settings
+            const leftFooterPositionArabic = leftFooterPositionArabicInput.value;
+            const leftFooterPositionEnglish = leftFooterPositionEnglishInput.value;
+            const leftFooterNameArabic = leftFooterNameArabicInput.value;
+            const leftFooterNameEnglish = leftFooterNameEnglishInput.value;
+
+            const centerFooterPositionArabic = centerFooterPositionArabicInput.value;
+            const centerFooterPositionEnglish = centerFooterPositionEnglishInput.value;
+            const centerFooterNameArabic = centerFooterNameArabicInput.value;
+            const centerFooterNameEnglish = centerFooterNameEnglishInput.value;
+
+            const rightFooterPositionArabic = rightFooterPositionArabicInput.value;
+            const rightFooterPositionEnglish = rightFooterPositionEnglishInput.value;
+            const rightFooterNameArabic = rightFooterNameArabicInput.value;
+            const rightFooterNameEnglish = rightFooterNameEnglishInput.value;
+
+
+            if (!fileInput.files.length) {
+                alert("Please select an Excel file!");
+                return;
+            }
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = async function (e) { // Marked as async
+                const data = e.target.result;
+                const workbook = XLSX.read(data, {type: 'binary', cellStyles: true});
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet,{skipHidden:true});
+                console.log(jsonData);
+
+                const pagesHtml = generateAttendancePages(jsonData, trainingDays, arabicTitle, englishTitle, arabicProjectName, englishProjectName, donorName, trainingDuration, hallDetails, leftLogoSrc, centerLogoSrc, rightLogoSrc,
+                                                        leftFooterPositionArabic, leftFooterPositionEnglish, leftFooterNameArabic, leftFooterNameEnglish,
+                                                        centerFooterPositionArabic, centerFooterPositionEnglish, centerFooterNameArabic, centerFooterNameEnglish,
+                                                        rightFooterPositionArabic, rightFooterPositionEnglish, rightFooterNameArabic, rightFooterNameEnglish);
+                document.getElementById('output').innerHTML = pagesHtml;
+
+                // Apply logo styles AFTER generating pages
+                applyLogoStyle('left');
+                applyLogoStyle('center');
+                applyLogoStyle('right');
+
+
+                // Introduce a small delay before hiding the modal - try 50ms
+                await new Promise(resolve => setTimeout(resolve, 50)); // Small delay
+
+                controlsModalInstance.hide(); // Use the stored instance, now hopefully after DOM is stable
+
+
+            };
+            reader.readAsBinaryString(file);
+        });
+
+  
+ 
+        // Event Listener for "Generate Attendance Sheets" Button (now in modal footer)
+        document.getElementById('generatewhole').addEventListener('click', function () {
+            saveSettings(); // Ensure all settings are saved before generate
+            const fileInput = document.getElementById('excel-file');
+            const trainingDays = parseInt(trainingDaysInput.value, 10);
+            const arabicTitle = arabicTitleInput.value;
+            const englishTitle = englishTitleInput.value;
+            const arabicProjectName = arabicProjectNameInput.value;
+            const englishProjectName = englishProjectNameInput.value;
+            const donorName = donorNameInput.value;
+            const trainingDuration = trainingDurationInput.value;
+            const hallDetails = hallDetailsInput.value;
+            const leftLogoSrc = leftLogoImg.src;
+            const centerLogoSrc = centerLogoImg.src;
+            const rightLogoSrc =  rightLogoImg.src;
+
+            // Get Footer Settings
+            const leftFooterPositionArabic = leftFooterPositionArabicInput.value;
+            const leftFooterPositionEnglish = leftFooterPositionEnglishInput.value;
+            const leftFooterNameArabic = leftFooterNameArabicInput.value;
+            const leftFooterNameEnglish = leftFooterNameEnglishInput.value;
+
+            const centerFooterPositionArabic = centerFooterPositionArabicInput.value;
+            const centerFooterPositionEnglish = centerFooterPositionEnglishInput.value;
+            const centerFooterNameArabic = centerFooterNameArabicInput.value;
+            const centerFooterNameEnglish = centerFooterNameEnglishInput.value;
+
+            const rightFooterPositionArabic = rightFooterPositionArabicInput.value;
+            const rightFooterPositionEnglish = rightFooterPositionEnglishInput.value;
+            const rightFooterNameArabic = rightFooterNameArabicInput.value;
+            const rightFooterNameEnglish = rightFooterNameEnglishInput.value;
+
+
+            if (!fileInput.files.length) {
+                alert("Please select an Excel file!");
+                return;
+            }
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = async function (e) { // Marked as async
+                const data = e.target.result;
+                const workbook = XLSX.read(data, {type: 'binary'});
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                console.log(jsonData);
+
+                const pagesHtml = generateAttendancePages(jsonData, trainingDays, arabicTitle, englishTitle, arabicProjectName, englishProjectName, donorName, trainingDuration, hallDetails, leftLogoSrc, centerLogoSrc, rightLogoSrc,
+                                                        leftFooterPositionArabic, leftFooterPositionEnglish, leftFooterNameArabic, leftFooterNameEnglish,
+                                                        centerFooterPositionArabic, centerFooterPositionEnglish, centerFooterNameArabic, centerFooterNameEnglish,
+                                                        rightFooterPositionArabic, rightFooterPositionEnglish, rightFooterNameArabic, rightFooterNameEnglish);
+                document.getElementById('output').innerHTML = pagesHtml;
+
+                // Apply logo styles AFTER generating pages
+                applyLogoStyle('left');
+                applyLogoStyle('center');
+                applyLogoStyle('right');
+
+
+                // Introduce a small delay before hiding the modal - try 50ms
+                await new Promise(resolve => setTimeout(resolve, 50)); // Small delay
+
+                controlsModalInstance.hide(); // Use the stored instance, now hopefully after DOM is stable
+
+
+            };
+            reader.readAsBinaryString(file);
+        });
+
+  
+
+
+
+
+
+
+
+
+  
+        // Event Listener for "Export to PDF" Button (now in modal footer)
+        document.getElementById('export').addEventListener('click', async function () { // Marked as async
+            const {jsPDF} = window.jspdf;
+            const pdf = new jsPDF('landscape', 'mm', 'a4',true);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const pxToMm = 0.264583;
+
+            const pages = document.querySelectorAll('.attendance-page');
+
+            for (let i = 0; i < pages.length; i++) {
+                const canvas = await html2canvas(pages[i], {scale: 3});
+                const imgData = canvas.toDataURL('image/png');
+
+                const imgWidthMm = canvas.width * pxToMm;
+                const imgHeightMm = canvas.height * pxToMm;
+
+                const widthRatio = pdfWidth / imgWidthMm;
+                const heightRatio = pdfHeight / imgHeightMm;
+                const ratio = Math.min(widthRatio, heightRatio);
+
+                const displayWidth = imgWidthMm * ratio +30;
+                const displayHeight = imgHeightMm * ratio;
+
+                const marginX = (pdfWidth - displayWidth) / 2;
+                const marginY = (pdfHeight - displayHeight) / 2;
+
+                if (i > 0) {
+                    pdf.addPage();
+                }
+                pdf.addImage(imgData, 'PNG', marginX, marginY, displayWidth, displayHeight,undefined,'FAST');
+            }
+
+            pdf.save('attendance.pdf');
+             // Close the modal after export
+             // Introduce a small delay before hiding the modal - try 50ms
+             await new Promise(resolve => setTimeout(resolve, 50)); // Small delay
+             controlsModalInstance.hide(); // Use the stored instance, now hopefully after DOM is stable
+        });
+
+        // Event Listener for "Print Attendance Sheets" Button
+        document.getElementById('printButton').addEventListener('click', printAttendanceSheets);
+
+    </script>
+
+    </body>
+    </html>
